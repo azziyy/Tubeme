@@ -363,16 +363,47 @@ class Player {
         vibrate(10);
     }
 
-    toggleFullscreen() {
-        const elem = document.documentElement;
-        if (!document.fullscreenElement) {
-            (elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen)?.call(elem);
-            document.getElementById('fullscreen-icon').textContent = 'fullscreen_exit';
-        } else {
-            (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen)?.call(document);
-            document.getElementById('fullscreen-icon').textContent = 'fullscreen';
+    async toggleFullscreen() {
+    const elem = document.documentElement;
+    const fsIcon = document.getElementById('fullscreen-icon');
+
+    if (!document.fullscreenElement) {
+        // 1. To'liq ekran rejimiga kirish buyrug'ini yuboramiz
+        try {
+            const requestMethod = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
+            if (requestMethod) {
+                await requestMethod.call(elem);
+            }
+
+            // 2. Ekran orientatsiyasini qulflash (Yonga burish)
+            // Bu qism aynan siz so'ragan muammoni hal qiladi
+            if (screen.orientation && screen.orientation.lock) {
+                // 'landscape' - ekranni gorizontal holatga majburan o'tkazadi
+                await screen.orientation.lock('landscape').catch(err => {
+                    console.log("Orientatsiya qulflashda xato:", err);
+                });
+            }
+            
+            fsIcon.textContent = 'fullscreen_exit';
+        } catch (err) {
+            console.error("Fullscreen xatosi:", err);
         }
+    } else {
+        // 3. To'liq ekrandan chiqish
+        const exitMethod = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+        if (exitMethod) {
+            await exitMethod.call(document);
+        }
+
+        // 4. Orientatsiyani yana bo'shatish (Portret rejimiga qaytishi uchun)
+        if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+
+        fsIcon.textContent = 'fullscreen';
     }
+}
+
 
     async togglePiP() {
         try {
@@ -575,3 +606,4 @@ class Player {
 }
 
 export default new Player();
+ 
